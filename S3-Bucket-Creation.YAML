@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+# https://github.com/aws-cloudformation/cfn-python-lint
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-validate-template.html
+# https://stackoverflow.com/questions/56942657/how-to-fix-exactly-one-of-transitiondate-and-transitionindays-must-be-specified
+#https://stackoverflow.com/questions/54371615/setting-lifecycle-configuration-for-s3-buckets-in-yaml-file
+
+
+## https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/quickref-s3.html
+
+Description:  Create S3 Bucket with S3 bucket with Life Cycle and Encryption and Versioning with DeletionPolicy 
+Parameters:
+  AppName:
+    Description: Application Name
+    Type: String
+    Default: ayuudairy
+  EnvType:
+    Description: "Environment Type (eg: dev, prod, sit)"
+    Type: String
+    AllowedValues:
+      - dev
+      - sit
+      - prod
+    Default: dev
+  S3BucketStorageClass:
+    Description: Storage Class
+    Type: String
+    AllowedValues:
+      - DEEP_ARCHIVE
+      - GLACIER
+      - INTELLIGENT_TIERING
+      - ONEZONE_IA
+      - STANDARD_IA
+      - STANDARD
+    Default: STANDARD
+  LoggingBucketVersioning:
+    Description: The versioning state of an Amazon S3 bucket
+    Type: String
+    AllowedValues:
+      - Enabled
+      - Suspended
+    Default: Enabled
+Mappings:
+  RegionMap:
+    us-east-1:
+      S3hostedzoneID: Z3AQBSTGFYJSTF
+      websiteendpoint: s3-website-us-east-1.amazonaws.com
+    us-west-1:
+      S3hostedzoneID: Z2F56UZL2M1ACD
+      websiteendpoint: s3-website-us-west-1.amazonaws.com
+    us-west-2:
+      S3hostedzoneID: Z3BJ6K6RIION7M
+      websiteendpoint: s3-website-us-west-2.amazonaws.com
+    eu-west-1:
+      S3hostedzoneID: Z1BKCTXD74EZPE
+      websiteendpoint: s3-website-eu-west-1.amazonaws.com
+    ap-southeast-1:
+      S3hostedzoneID: Z3O0J2DXBE1FTB
+      websiteendpoint: s3-website-ap-southeast-1.amazonaws.com
+    ap-southeast-2:
+      S3hostedzoneID: Z1WCIGYICN2BYD
+      websiteendpoint: s3-website-ap-southeast-2.amazonaws.com
+    ap-northeast-1:
+      S3hostedzoneID: Z2M4EHUR26P7ZW
+      websiteendpoint: s3-website-ap-northeast-1.amazonaws.com
+    sa-east-1:
+      S3hostedzoneID: Z31GFT0UA1I2HV
+      websiteendpoint: s3-website-sa-east-1.amazonaws.com   
+    
+Resources:
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    Properties:
+      AccessControl: PublicRead
+      BucketName: !Sub "${EnvType}-${AppName}-ayuuservice"
+      VersioningConfiguration:
+        Status: !Ref 'LoggingBucketVersioning'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: GlacierRule
+            Status: Enabled 
+            ExpirationInDays: '40'
+            Transitions:
+              - TransitionInDays: '30'
+                StorageClass: GLACIER
+Outputs:
+  BucketName:
+    Value: !Ref 'S3Bucket'
+    Description: S3 bucket with Life Cycle and Encryption and Versioning
+  AccessControl:
+    Value: !Ref 'S3Bucket'
+    Description: Access level of S3 Bucket     
